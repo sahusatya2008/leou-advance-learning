@@ -1,0 +1,11 @@
+# GitHub Linguist metadata
+# -----------------------------------------------------------------------------
+# Keep the repository language breakdown honest: the platform is polyglot, and
+# third-party assets should not be mistaken for authored source.
+
+# Pinned Monaco distribution — vendored, not written by this project.
+public/vendor/** linguist-vendored
+
+# These formats are part of the stack but Linguist hides them by default.
+*.sql linguist-detectable
+*.yml linguist-detectable
