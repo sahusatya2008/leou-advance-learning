@@ -1,0 +1,84 @@
+# Local production stack. `docker compose up -d` brings up the database and the web
+# app (which also runs the Python face service).
+#
+# Why containers and not the launchd agent: macOS TCC refuses to let a LaunchAgent
+# execute anything inside ~/Documents, and Docker Desktop's restart policy is what
+# actually brings the platform back after a crash or a reboot.
+#
+# The public tunnel is NOT here: it runs as Tailscale Funnel, asserted by the
+# com.leou.funnel LaunchAgent (`tailscale funnel --bg 3001`), which proxies
+# https://leou.tailabe1e6.ts.net to the app on 127.0.0.1:3001.
+# (A leftover ngrok agent used to crash-loop here; it was removed 2026-10-23.)
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: leou-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: leou
+      POSTGRES_PASSWORD: leou_pass
+      POSTGRES_DB: leou
+    # Bound to loopback only. The database must never be reachable from outside.
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - leou_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leou -d leou"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      target: runtime
+    image: leou-platform:local
+    # Build from the Dockerfile if the image is absent, but never reach for a
+    # registry: this image only exists locally.
+    pull_policy: never
+    container_name: leou-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://leou:leou_pass@db:5432/leou?schema=public
+      # Override in .env for anything beyond local use.
+      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-change-me}
+      FACE_SVC_URL: http://127.0.0.1:8000
+      UPLOAD_DIR: /app/uploads
+      # Code execution runner. The runner is a host process (see
+      # ~/.config/leou/com.leou.runner.plist) because it needs the host's Docker
+      # CLI to launch the sandboxed student containers. It listens on the
+      # Docker gateway and refuses every code route unless RUNNER_TOKEN matches,
+      # so an empty RUNNER_TOKEN means "no code execution", never "open runner".
+      RUNNER_URL: ${RUNNER_URL:-http://host.docker.internal:4100}
+      RUNNER_TOKEN: ${RUNNER_TOKEN:-}
+      # LeouPay. These are interpolated from .env - compose only substitutes
+      # referenced variables, it does not inject the whole file, so anything not
+      # listed here is invisible to the container no matter what .env says.
+      PAYMENT_UPI_ID: ${PAYMENT_UPI_ID:-your-upi-id@okaxis}
+      PAYMENT_PAYEE_NAME: ${PAYMENT_PAYEE_NAME:-LEOU}
+      PAYMENT_QR_IMAGE: ${PAYMENT_QR_IMAGE:-/payment-qr.png}
+      PAYMENT_HELPLINE: ${PAYMENT_HELPLINE:-}
+      PAYMENT_BANK_NOTE: ${PAYMENT_BANK_NOTE:-LEOU tuition fees}
+    volumes:
+      # Uploaded files must outlive the container.
+      - leou_uploads:/app/uploads
+    ports:
+      - "127.0.0.1:3001:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      # Face models are baked into the image, but the first real request still
+      # pays TensorFlow warm-up, so allow a generous start period.
+      start_period: 120s
+
+volumes:
+  leou_pgdata:
+  leou_uploads:

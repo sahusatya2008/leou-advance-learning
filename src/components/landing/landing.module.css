@@ -1,0 +1,1995 @@
+/**
+ * Landing-page design system.
+ *
+ * Everything here is scoped to the marketing page: the class names are all
+ * module-local, so none of it can leak into the dashboard, admin or auth
+ * screens that share `globals.css`. Only the handful of tokens that already
+ * exist globally (--background, --border, --font-*) are read from the app.
+ *
+ * The look is "engineering-grade premium": a near-black canvas, one cold
+ * indigo→cyan spectrum for product surfaces, a warm lime reserved exclusively
+ * for verified/graded states (so it always means the same thing), and hairline
+ * borders with an inset top highlight to read as machined metal rather than
+ * flat divs.
+ */
+
+.lp {
+  /* ---- canvas ---------------------------------------------------------- */
+  --lp-void: radial-gradient(ellipse at top, #0a1026 0%, #04040f 70%) fixed;
+  --lp-bg-solid: #04040f;
+  --lp-deep: #060817;
+  --lp-ink: #0c1538;
+  --lp-surface: #121b48;
+  --lp-surface-2: #162056;
+
+  /* ---- product spectrum ------------------------------------------------ */
+  --lp-indigo: #9d7cff;
+  --lp-violet: #b89bff;
+  --lp-cyan: #4df7ff;
+  --lp-sky: #5faeff;
+  --lp-teal: #2df8b5;
+  --lp-amber: #ffd56b;
+  --lp-rose: #ff9fb3;
+  --lp-fuschia: #ff7dff;
+
+  /* ---- semantic -------------------------------------------------------- */
+  --lp-good: #c9ff9e;
+  --lp-warn: #ffe0a3;
+  --lp-stop: #ffb9c9;
+  --lp-info: #b9dcff;
+
+  /* ---- surfaces -------------------------------------------------------- */
+  --lp-line: rgb(255 255 255 / 0.12);
+  --lp-line-soft: rgb(255 255 255 / 0.06);
+  --lp-line-strong: rgb(255 255 255 / 0.22);
+  --lp-fill: rgb(28 36 80 / 0.5);
+  --lp-fill-hi: rgb(48 60 120 / 0.62);
+  --lp-glow: rgb(157 124 255 / 0.32);
+  --lp-glow-cyan: rgb(77 247 255 / 0.24);
+  --lp-glow-teal: rgb(45 248 181 / 0.22);
+  --lp-glow-amber: rgb(255 213 107 / 0.18);
+
+  /* ---- type ------------------------------------------------------------ */
+  --lp-dim: #c9d6ee;
+  --lp-dimmer: #8fa3c7;
+
+  background: var(--lp-void);
+  color: #e6ebf5;
+  overflow-x: clip;
+}
+
+/* Every panel gets the same 1px top highlight. This one rule is what makes the
+   cards read as physical objects instead of outlined rectangles. */
+.lpEdge {
+  position: relative;
+  border: 1px solid var(--lp-line);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+.lpEdge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.02);
+}
+
+/* ========================================================================
+   Keyframes
+   ======================================================================== */
+
+@keyframes lpFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0);
+  }
+}
+
+@keyframes lpDrift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(4%, -5%, 0) scale(1.07);
+  }
+  66% {
+    transform: translate3d(-4%, 4%, 0) scale(0.95);
+  }
+}
+
+@keyframes lpDriftSlow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.04);
+  }
+  50% {
+    transform: translate3d(-6%, 6%, 0) scale(1);
+  }
+}
+
+@keyframes lpGridPan {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 64px 64px;
+  }
+}
+
+@keyframes lpSheen {
+  from {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  to {
+    transform: translateX(320%) skewX(-18deg);
+  }
+}
+
+@keyframes lpMarquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes lpPulseRing {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.7;
+  }
+  70%,
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes lpScan {
+  0% {
+    transform: translateY(-110%);
+    opacity: 0;
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110%);
+    opacity: 0;
+  }
+}
+
+@keyframes lpBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes lpRise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lpPop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lpTicker {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+@keyframes lpDash {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+/* ========================================================================
+   Textures
+   ======================================================================== */
+
+/* Film grain. A single inline SVG turbulence, tiled. Costs one tiny request
+   and removes the "flat vector" plastic look that gives away a template. */
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+}
+
+.gridBg {
+  position: absolute;
+  inset: -10%;
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 78%);
+  animation: lpGridPan 24s linear infinite;
+}
+
+/* A wide aurora, rebuilt for the new palette: violet and cyan with a teal
+   counter-light. Layered radial gradients rather than a blurred div — no extra
+   paint cost, and it stays crisp at any viewport size. */
+.mesh {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 46% at 16% 6%, rgb(157 92 255 / 0.34), transparent 62%),
+    radial-gradient(44% 38% at 86% 12%, rgb(77 247 255 / 0.2), transparent 64%),
+    radial-gradient(50% 42% at 60% 94%, rgb(45 248 181 / 0.16), transparent 66%);
+}
+
+/* Slow aurora ribbons. Two oversized conic sweeps, blurred to nothing, drifting
+   on long offsets so they never read as a loop. Disabled under reduced motion
+   by the block at the foot of this file. */
+.aurora {
+  position: absolute;
+  inset: -25%;
+  pointer-events: none;
+  filter: blur(60px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  background:
+    conic-gradient(
+      from 210deg at 50% 50%,
+      transparent 0deg,
+      rgb(157 92 255 / 0.5) 70deg,
+      rgb(77 247 255 / 0.42) 130deg,
+      transparent 210deg
+    ),
+    conic-gradient(
+      from 20deg at 40% 60%,
+      transparent 0deg,
+      rgb(45 248 181 / 0.34) 90deg,
+      transparent 190deg
+    );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .aurora {
+    animation: lpAurora 64s ease-in-out infinite alternate;
+  }
+  .auroraB {
+    animation-duration: 88s;
+    animation-direction: alternate-reverse;
+    opacity: 0.4;
+  }
+}
+
+@keyframes lpAurora {
+  0% {
+    transform: translate3d(-3%, -2%, 0) rotate(-6deg) scale(1.05);
+  }
+  50% {
+    transform: translate3d(4%, 3%, 0) rotate(5deg) scale(1.16);
+  }
+  100% {
+    transform: translate3d(-2%, 4%, 0) rotate(-3deg) scale(1.09);
+  }
+}
+
+/* A single raked light beam behind the headline. Reads as stage lighting on the
+   hero only, and is masked so it fades out instead of ending in a hard edge. */
+.beam {
+  position: absolute;
+  top: -30%;
+  left: 50%;
+  width: min(46rem, 120vw);
+  height: 78rem;
+  translate: -50% 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgb(157 92 255 / 0.3),
+    rgb(77 247 255 / 0.1) 42%,
+    transparent 78%
+  );
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  filter: blur(14px);
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .beam {
+    animation: lpBeam 18s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes lpBeam {
+  from {
+    opacity: 0.55;
+    transform: translateX(-4%);
+  }
+  to {
+    opacity: 0.95;
+    transform: translateX(4%);
+  }
+}
+
+/* ========================================================================
+   Typography primitives
+   ======================================================================== */
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--lp-cyan);
+}
+
+.eyebrow::before {
+  content: "";
+  width: 1.75rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--lp-cyan));
+}
+
+.display {
+  font-size: clamp(2.6rem, 7.4vw, 5.5rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.042em;
+  text-wrap: balance;
+}
+
+.h2 {
+  font-size: clamp(1.9rem, 4vw, 3.15rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.032em;
+  text-wrap: balance;
+}
+
+.h3 {
+  font-size: clamp(1.35rem, 2.2vw, 1.75rem);
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.024em;
+}
+
+.lede {
+  font-size: clamp(1rem, 1.35vw, 1.1875rem);
+  line-height: 1.65;
+  color: var(--lp-dim);
+  text-wrap: pretty;
+}
+
+.mono {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-variant-ligatures: none;
+}
+
+/* The one serif in the page. Used for a single word per headline: it is the
+   contrast that makes an otherwise all-Inter page feel art-directed. */
+.serif {
+  font-family: var(--lp-display), ui-serif, Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  background: linear-gradient(96deg, var(--lp-cyan), var(--lp-violet) 52%, var(--lp-indigo));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  padding-right: 0.06em;
+}
+
+.grad {
+  background: linear-gradient(96deg, #fff 8%, var(--lp-cyan) 46%, var(--lp-violet) 96%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ========================================================================
+   Nav
+   ======================================================================== */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid transparent;
+  transition:
+    background 0.4s ease,
+    border-color 0.4s ease,
+    box-shadow 0.4s ease;
+}
+
+/* Once the page moves off the top the bar earns a glass backdrop and a
+   hairline that separates it from the content sliding underneath. */
+.navStuck {
+  background: rgb(5 7 14 / 0.72);
+  border-bottom-color: var(--lp-line);
+  box-shadow: 0 16px 44px -30px rgb(0 0 0 / 0.95);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+
+.navShell {
+  margin-inline: auto;
+  max-width: 80rem;
+  padding-inline: 1.25rem;
+  transition:
+    max-width 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 4.5rem;
+  transition: min-height 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* On desktop the bar tightens a touch when stuck — a small contraction that
+   reads as the page settling into reading mode. */
+@media (min-width: 1024px) {
+  .navStuck .navShell {
+    max-width: 76rem;
+  }
+
+  .navStuck .navInner {
+    min-height: 3.75rem;
+  }
+}
+
+/* ---- brand ------------------------------------------------------------- */
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.brandMark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.brandGlyph {
+  position: relative;
+  width: 2rem;
+  height: 2rem;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.brand:hover .brandGlyph {
+  transform: rotate(-7deg) scale(1.08);
+}
+
+/* A faint orbit ring echoing the mark's own loop. It turns slowly and only
+   brightens under the pointer. */
+.brandOrbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 60%,
+    rgb(77 247 255 / 0.7) 74%,
+    rgb(157 124 255 / 0.7) 88%,
+    transparent 100%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  opacity: 0.45;
+  animation: lpOrbit 11s linear infinite;
+  transition: opacity 0.4s ease;
+}
+
+.brand:hover .brandOrbit {
+  opacity: 1;
+}
+
+.brandText {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.brandSpark {
+  margin-left: 0.12em;
+  font-size: 0.62em;
+  animation: lpTwinkle 3.6s ease-in-out infinite;
+}
+
+/* ---- desktop rail + gliding ink ---------------------------------------- */
+
+.navRail {
+  position: relative;
+  display: none;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.24rem;
+  border: 1px solid var(--lp-line-soft);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@media (min-width: 1024px) {
+  .navRail {
+    display: flex;
+  }
+}
+
+.navInk {
+  position: absolute;
+  left: 0;
+  top: 0.24rem;
+  bottom: 0.24rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.08), transparent 70%),
+    rgb(157 124 255 / 0.16);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 0 0 1px rgb(157 124 255 / 0.25),
+    0 10px 24px -12px var(--lp-glow);
+  opacity: 0;
+  transition:
+    transform 0.45s cubic-bezier(0.34, 1.4, 0.5, 1),
+    width 0.45s cubic-bezier(0.34, 1.4, 0.5, 1),
+    opacity 0.3s ease;
+  will-change: transform, width;
+}
+
+.navInk[data-show="true"] {
+  opacity: 1;
+}
+
+.navLink {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  color: var(--lp-dim);
+  white-space: nowrap;
+  transition: color 0.25s ease;
+}
+
+.navLinkText {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navLink:hover,
+.navLink[data-active="true"] {
+  color: #fff;
+}
+
+.navLink:hover .navLinkText,
+.navLink[data-active="true"] .navLinkText {
+  transform: translateY(-0.5px);
+}
+
+/* ---- actions ----------------------------------------------------------- */
+
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navSignIn {
+  display: none;
+  padding: 0.5rem 0.95rem;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .navSignIn {
+    display: inline-flex;
+  }
+}
+
+.navCta {
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+}
+
+.navCtaIcon {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navCta:hover .navCtaIcon {
+  transform: translateX(3px);
+}
+
+/* ---- mobile chip rail -------------------------------------------------- */
+
+.navMobile {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.15rem 1.25rem 0.8rem;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 1024px) {
+  .navMobile {
+    display: none;
+  }
+}
+
+.navMobileLink {
+  flex: none;
+  scroll-snap-align: center;
+  padding: 0.42rem 0.8rem;
+  border: 1px solid var(--lp-line-soft);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.02);
+  font-size: 0.8125rem;
+  color: var(--lp-dim);
+  white-space: nowrap;
+  transition:
+    color 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.navMobileLink:hover {
+  color: #fff;
+}
+
+.navMobileLink[data-active="true"] {
+  color: #fff;
+  border-color: rgb(77 247 255 / 0.5);
+  background: rgb(77 247 255 / 0.1);
+  box-shadow: 0 0 22px -8px var(--lp-glow-cyan);
+}
+
+/* Scroll progress: a gradient hairline pinned to the nav's bottom edge, with a
+   soft bloom so it reads as a live signal rather than a rule. */
+.progress {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 1.5px;
+  width: 100%;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--lp-indigo), var(--lp-cyan), var(--lp-violet));
+  box-shadow: 0 0 10px rgb(77 247 255 / 0.5);
+}
+
+@keyframes lpOrbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes lpTwinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.82) rotate(-12deg);
+  }
+}
+
+/* ---- hero recede + scroll cue ------------------------------------------ */
+
+/* As the reader begins to scroll, the hero copy leans back — it fades, lifts
+   and shrinks a touch, so the first scroll feels like the page opening up
+   rather than simply moving. Scroll-driven, so the visitor controls it and the
+   motion never happens unprompted. */
+@media (prefers-reduced-motion: no-preference) {
+  .heroRecede {
+    opacity: calc(1 - var(--lp-hero, 0) * 1.2);
+    transform: translate3d(0, calc(var(--lp-hero, 0) * -46px), 0)
+      scale(calc(1 - var(--lp-hero, 0) * 0.045));
+    transform-origin: 50% 0;
+    will-change: transform, opacity;
+  }
+}
+
+/* A quiet invitation to scroll, sitting under the hero. It lives inside the
+   receding copy, so it bows out with the rest of the headline once the reader
+   takes the hint. */
+.scrollCue {
+  display: inline-flex;
+  margin-top: 2.75rem;
+  color: var(--lp-dimmer);
+  transition: color 0.3s ease;
+}
+
+.scrollCueMouse {
+  position: relative;
+  display: block;
+  width: 1.5rem;
+  height: 2.4rem;
+  border: 1.5px solid var(--lp-line-strong);
+  border-radius: 999px;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.scrollCueWheel {
+  position: absolute;
+  top: 0.4rem;
+  left: 50%;
+  width: 3px;
+  height: 7px;
+  margin-left: -1.5px;
+  border-radius: 999px;
+  background: var(--lp-cyan);
+  animation: lpCue 1.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.scrollCue:hover {
+  color: #fff;
+}
+
+.scrollCue:hover .scrollCueMouse {
+  border-color: rgb(77 247 255 / 0.6);
+  box-shadow: 0 0 24px -6px var(--lp-glow-cyan);
+}
+
+@keyframes lpCue {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  60% {
+    transform: translateY(0.65rem);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0.95rem);
+    opacity: 0;
+  }
+}
+
+/* ========================================================================
+   Buttons
+   ======================================================================== */
+
+.btnPrimary,
+.btnGhost {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.7rem;
+  font-size: 0.9375rem;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease,
+    border-color 0.28s ease,
+    background 0.28s ease;
+}
+
+.btnPrimary {
+  padding: 0.75rem 1.4rem;
+  color: #fff;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.16), transparent 60%),
+    linear-gradient(96deg, var(--lp-indigo), var(--lp-violet));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.24),
+    0 8px 26px -8px rgb(99 102 241 / 0.7);
+}
+
+/* A single specular highlight that sweeps across on hover. */
+.btnPrimary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.3), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+}
+
+.btnPrimary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 14px 40px -10px rgb(99 102 241 / 0.85);
+}
+
+.btnPrimary:hover::after {
+  animation: lpSheen 0.75s ease;
+}
+
+.btnPrimary:active {
+  transform: translateY(0);
+}
+
+.btnGhost {
+  padding: 0.75rem 1.4rem;
+  color: #dbe3f7;
+  border: 1px solid var(--lp-line-strong);
+  background: rgb(255 255 255 / 0.035);
+  backdrop-filter: blur(8px);
+}
+
+.btnGhost:hover {
+  transform: translateY(-1px);
+  border-color: rgb(34 211 238 / 0.5);
+  background: rgb(34 211 238 / 0.08);
+  color: #fff;
+}
+
+.btnPrimary:focus-visible,
+.btnGhost:focus-visible,
+.navLink:focus-visible,
+.tab:focus-visible {
+  outline: 2px solid var(--lp-cyan);
+  outline-offset: 3px;
+}
+
+/* ========================================================================
+   Layout
+   ======================================================================== */
+
+.shell {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 80rem;
+  padding-inline: 1.25rem;
+}
+
+.section {
+  position: relative;
+  padding-block: clamp(4.5rem, 9vw, 8rem);
+}
+
+.sectionHead {
+  max-width: 46rem;
+  margin-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+
+.sectionHeadCenter {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.rule {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--lp-line-strong) 18%,
+    var(--lp-line-strong) 82%,
+    transparent
+  );
+}
+
+/* ========================================================================
+   Hero
+   ======================================================================== */
+
+.hero {
+  position: relative;
+  padding-top: clamp(3.5rem, 8vw, 6.5rem);
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 2;
+  max-width: 62rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.9rem 0.4rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--lp-line-strong);
+  background: rgb(255 255 255 / 0.04);
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #cfe0ff;
+}
+
+.dot {
+  position: relative;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--lp-good);
+  box-shadow: 0 0 10px var(--lp-good);
+}
+
+/* Expanding halo — the "this is live" tell. */
+.dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--lp-good);
+  animation: lpPulseRing 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  font-size: 0.8125rem;
+  color: var(--lp-dimmer);
+}
+
+.trustItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.trustItem svg {
+  color: var(--lp-good);
+}
+
+/* ---- the showcase shell ---------------------------------------------- */
+
+.showcase {
+  position: relative;
+  margin-top: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+/* A soft pool of light under the window so it doesn't float in a void. */
+.showcase::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -6%;
+  width: 78%;
+  height: 46%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(99 102 241 / 0.34), transparent 72%);
+  filter: blur(34px);
+  pointer-events: none;
+}
+
+.window {
+  position: relative;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0c1220, #070a12);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 2px 4px rgb(0 0 0 / 0.5),
+    0 40px 90px -30px rgb(0 0 0 / 0.9),
+    0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+/* ---- macOS chrome ---------------------------------------------------- */
+
+.chrome {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.02));
+  border-bottom: 1px solid var(--lp-line);
+}
+
+.lights {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.light {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.28);
+}
+
+.urlbar {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--lp-line-soft);
+  background: rgb(0 0 0 / 0.3);
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  color: var(--lp-dimmer);
+  overflow: hidden;
+}
+
+.urlbar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lock {
+  color: var(--lp-good);
+  flex-shrink: 0;
+}
+
+/* ---- tabs ------------------------------------------------------------ */
+
+.tabbar {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 0.6rem 0;
+  border-bottom: 1px solid var(--lp-line);
+  background: rgb(0 0 0 / 0.22);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabbar::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--lp-dimmer);
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.tab:hover {
+  color: #dbe3f7;
+  background: rgb(255 255 255 / 0.035);
+}
+
+.tabActive {
+  color: #fff;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.015));
+  border-color: var(--lp-line);
+}
+
+/* Active-tab underline, indented so it reads as a tab and not a border. */
+.tabActive::after {
+  content: "";
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  top: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--lp-cyan), var(--lp-indigo));
+  box-shadow: 0 0 12px rgb(34 211 238 / 0.7);
+}
+
+.tabIcon {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+}
+
+.stage {
+  position: relative;
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgb(99 102 241 / 0.07), transparent 60%),
+    linear-gradient(180deg, #080c16, #060910);
+}
+
+/* Cross-fade + lift on every tab change. */
+.panel {
+  animation: lpPop 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 0.9rem;
+  border-top: 1px solid var(--lp-line);
+  background: rgb(0 0 0 / 0.3);
+  font-size: 0.6875rem;
+  color: var(--lp-dimmer);
+}
+
+/* Progress pips: how far through the auto-tour we are. */
+/* Honest labelling: every screen in the tour is invented demo data, and the
+   caption says so permanently rather than only in the page footer. */
+.demoBadge {
+  flex-shrink: 0;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--lp-line-soft);
+  background: rgb(255 255 255 / 0.04);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--lp-dimmer);
+}
+
+.pips {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.pip {
+  height: 2px;
+  width: 1.4rem;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.12);
+  overflow: hidden;
+}
+
+.pipFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--lp-cyan), var(--lp-indigo));
+  transform-origin: 0 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pipFill {
+    animation-name: lpFill;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+}
+
+@keyframes lpFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ========================================================================
+   Product mockup internals (shared by the window and the feature panels)
+   ======================================================================== */
+
+.app {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  min-height: 24rem;
+  font-size: 0.75rem;
+}
+
+.sidebar {
+  border-right: 1px solid var(--lp-line);
+  background: rgb(0 0 0 / 0.28);
+  padding: 0.7rem 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.sideBrand {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.4rem 0.7rem;
+  margin-bottom: 0.3rem;
+  border-bottom: 1px solid var(--lp-line-soft);
+  font-weight: 650;
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
+}
+
+.sideGlyph {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: none;
+}
+
+.sideItem {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.34rem 0.45rem;
+  border-radius: 0.4rem;
+  font-size: 0.6875rem;
+  color: var(--lp-dimmer);
+  white-space: nowrap;
+}
+
+.sideItemActive {
+  color: #fff;
+  background: linear-gradient(90deg, rgb(99 102 241 / 0.28), rgb(99 102 241 / 0.06));
+  box-shadow: inset 0 0 0 1px rgb(129 140 248 / 0.3);
+}
+
+.sideItem svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.main {
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.panelTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.grid {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.stat {
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--lp-line-soft);
+  background: rgb(255 255 255 / 0.022);
+}
+
+.statLabel {
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--lp-dimmer);
+}
+
+.statValue {
+  margin-top: 0.15rem;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--lp-line-soft);
+  background: rgb(255 255 255 / 0.022);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.14rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--lp-line);
+  background: rgb(255 255 255 / 0.04);
+  font-size: 0.5625rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.chipGood {
+  color: #d9f99d;
+  border-color: rgb(163 230 53 / 0.4);
+  background: rgb(163 230 53 / 0.12);
+}
+
+.chipWarn {
+  color: #fde68a;
+  border-color: rgb(251 191 36 / 0.4);
+  background: rgb(251 191 36 / 0.12);
+}
+
+.chipInfo {
+  color: #bae6fd;
+  border-color: rgb(56 189 248 / 0.4);
+  background: rgb(56 189 248 / 0.12);
+}
+
+.chipStop {
+  color: #fecdd3;
+  border-color: rgb(251 113 133 / 0.4);
+  background: rgb(251 113 133 / 0.12);
+}
+
+.chipViolet {
+  color: #ddd6fe;
+  border-color: rgb(167 139 250 / 0.4);
+  background: rgb(167 139 250 / 0.12);
+}
+
+/* ---- editor ----------------------------------------------------------- */
+
+.editor {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  border-radius: 0.55rem;
+  border: 1px solid var(--lp-line-soft);
+  background: rgb(0 0 0 / 0.34);
+  overflow: hidden;
+}
+
+.editorBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.55rem;
+  border-bottom: 1px solid var(--lp-line-soft);
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.625rem;
+  color: var(--lp-dimmer);
+}
+
+.code {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.625rem;
+  line-height: 1.75;
+  overflow-x: auto;
+  white-space: pre;
+  scrollbar-width: thin;
+}
+
+.tkKey {
+  color: #c4b5fd;
+}
+.tkFn {
+  color: #7dd3fc;
+}
+.tkStr {
+  color: #a5f3d0;
+}
+.tkNum {
+  color: #fcd34d;
+}
+.tkCmt {
+  color: #5f6b8a;
+}
+.tkOp {
+  color: #94a3b8;
+}
+.tkPunc {
+  color: #64748b;
+}
+
+.term {
+  border-top: 1px solid var(--lp-line-soft);
+  padding: 0.45rem 0.7rem;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.625rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.8rem;
+  vertical-align: text-bottom;
+  background: var(--lp-cyan);
+  animation: lpBlink 1.05s steps(1) infinite;
+}
+
+/* ---- face verify ------------------------------------------------------ */
+
+.verify {
+  display: grid;
+  gap: 0.7rem;
+  justify-items: center;
+  padding: 1rem 0.75rem 0.9rem;
+}
+
+.viewfinder {
+  position: relative;
+  width: 8.5rem;
+  height: 8.5rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(closest-side, rgb(34 211 238 / 0.14), transparent 72%),
+    rgb(255 255 255 / 0.03);
+  box-shadow:
+    inset 0 0 0 1px rgb(34 211 238 / 0.35),
+    0 0 42px -6px rgb(34 211 238 / 0.45);
+  overflow: hidden;
+}
+
+/* The sweeping laser line — the visual shorthand for "scanning". */
+.viewfinder::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--lp-cyan), transparent);
+  box-shadow: 0 0 16px 2px rgb(34 211 238 / 0.75);
+  animation: lpScan 2.6s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewfinder::after {
+    animation: none;
+    top: 50%;
+    opacity: 0.4;
+  }
+}
+
+.corner {
+  position: absolute;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid var(--lp-cyan);
+  opacity: 0.85;
+}
+
+.cornerA {
+  top: 0.35rem;
+  left: 0.35rem;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 0.35rem 0 0 0;
+}
+.cornerB {
+  top: 0.35rem;
+  right: 0.35rem;
+  border-left: none;
+  border-bottom: none;
+  border-radius: 0 0.35rem 0 0;
+}
+.cornerC {
+  bottom: 0.35rem;
+  left: 0.35rem;
+  border-right: none;
+  border-top: none;
+  border-radius: 0 0 0 0.35rem;
+}
+.cornerD {
+  bottom: 0.35rem;
+  right: 0.35rem;
+  border-left: none;
+  border-top: none;
+  border-radius: 0 0 0.35rem 0;
+}
+
+/* ---- verdict ----------------------------------------------------------- */
+
+.verdict {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--lp-line-soft);
+  background: rgb(255 255 255 / 0.022);
+}
+
+.verdictBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.verdictTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.points {
+  margin: 0.35rem 0 0;
+  padding-left: 0.9rem;
+  font-size: 0.625rem;
+  line-height: 1.65;
+  color: var(--lp-dim);
+}
+
+.points li::marker {
+  color: var(--lp-good);
+}
+
+.footnote {
+  margin-top: 0.45rem;
+  font-size: 0.5625rem;
+  font-style: italic;
+  color: var(--lp-dimmer);
+}
+
+/* ---- timeline / audit -------------------------------------------------- */
+
+.audit {
+  display: grid;
+  gap: 0;
+}
+
+.auditItem {
+  position: relative;
+  display: grid;
+  grid-template-columns: 0.55rem 1fr;
+  gap: 0.55rem;
+  padding-bottom: 0.6rem;
+}
+
+.auditItem:last-child {
+  padding-bottom: 0;
+}
+
+/* The connecting rail between audit dots. */
+.auditItem:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 0.26rem;
+  top: 0.5rem;
+  bottom: 0.05rem;
+  width: 1px;
+  background: linear-gradient(180deg, var(--lp-line-strong), transparent);
+}
+
+.auditDot {
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-top: 0.2rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.04);
+}
+
+/* ========================================================================
+   Feature rows
+   ======================================================================== */
+
+.feature {
+  display: grid;
+  align-items: center;
+  gap: clamp(2rem, 5vw, 4.5rem);
+}
+
+@media (min-width: 62rem) {
+  .feature {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .featureFlip .featureCopy {
+    order: 2;
+  }
+
+  .featureFlip .featureArt {
+    order: 1;
+  }
+}
+
+.featureArt {
+  position: relative;
+}
+
+.featureBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bullets {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bullet {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+  align-items: start;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--lp-dim);
+}
+
+.bulletIcon {
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.1rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgb(34 211 238 / 0.32);
+  background: rgb(34 211 238 / 0.1);
+  color: var(--lp-cyan);
+  flex-shrink: 0;
+}
+
+/* ========================================================================
+   Question-type grid
+   ======================================================================== */
+
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.typeCell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem 0.9rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--lp-line-soft);
+  background: rgb(255 255 255 / 0.022);
+  overflow: hidden;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.28s ease,
+    background 0.28s ease;
+}
+
+.typeCell:hover {
+  transform: translateY(-3px);
+  border-color: rgb(139 92 246 / 0.45);
+  background: rgb(255 255 255 / 0.04);
+}
+
+/* Cursor-tracked spotlight; --mx/--my are set from a pointer handler. */
+.typeCell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    14rem circle at var(--mx, 50%) var(--my, 0%),
+    rgb(139 92 246 / 0.16),
+    transparent 62%
+  );
+}
+
+.typeCell:hover::before {
+  opacity: 1;
+}
+
+.typeName {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.typeDesc {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--lp-dimmer);
+}
+
+/* ========================================================================
+   Marquee
+   ======================================================================== */
+
+.marquee {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marqueeTrack {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.5rem;
+  padding-right: 0.5rem;
+  align-items: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .marqueeTrack {
+    animation: lpMarquee 38s linear infinite;
+  }
+
+  .marquee:hover .marqueeTrack {
+    animation-play-state: paused;
+  }
+}
+
+/* ========================================================================
+   Stats
+   ======================================================================== */
+
+.statBig {
+  font-size: clamp(2rem, 4.4vw, 3.15rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========================================================================
+   Roles
+   ======================================================================== */
+
+.roleCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.4rem 1.3rem;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.32s ease;
+}
+
+.roleCard:hover {
+  transform: translateY(-4px);
+}
+
+.roleIcon {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.7rem;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22);
+}
+
+.roleList {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: var(--lp-dim);
+}
+
+.roleList li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+/* ========================================================================
+   CTA + footer
+   ======================================================================== */
+
+.cta {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.1rem;
+  padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.5rem, 5vw, 4rem);
+  text-align: center;
+}
+
+.ctaFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  padding-block: 2.25rem;
+  font-size: 0.8125rem;
+  color: var(--lp-dimmer);
+}
+
+.footerGrid {
+  display: grid;
+  gap: 1.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  padding-bottom: 2rem;
+}
+
+.footerCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.footerHead {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lp-dimmer);
+  margin-bottom: 0.15rem;
+}
+
+.footerLink {
+  font-size: 0.8125rem;
+  color: #a8b3cd;
+  transition: color 0.2s ease;
+  width: fit-content;
+}
+
+.footerLink:hover {
+  color: var(--lp-cyan);
+}
+
+/* ========================================================================
+   Doodles
+   ======================================================================== */
+
+.doodle {
+  position: absolute;
+  pointer-events: none;
+  color: var(--lp-cyan);
+  opacity: 0.5;
+}
+
+/* ========================================================================
+   Responsive
+   ======================================================================== */
+
+/* The mockup app chrome collapses its sidebar on small screens. */
+@media (max-width: 40rem) {
+  .app {
+    grid-template-columns: 1fr;
+    min-height: 21rem;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.3rem;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--lp-line);
+    padding: 0.45rem 0.5rem;
+    scrollbar-width: none;
+  }
+
+  .sidebar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sideBrand {
+    border-bottom: none;
+    border-right: 1px solid var(--lp-line-soft);
+    padding: 0 0.5rem 0 0.15rem;
+    margin: 0 0.2rem 0 0;
+    flex-shrink: 0;
+  }
+
+  .sideItem {
+    flex-shrink: 0;
+  }
+}
+
+/* ========================================================================
+   Reduced motion
+   ======================================================================== */
+
+/* Belt-and-braces with the JS hooks: even if a component is mounted, nothing
+   decorative keeps moving. Nothing is hidden — only motion is removed. */
+@media (prefers-reduced-motion: reduce) {
+  .gridBg,
+  .dot::after,
+  .viewfinder::after,
+  .cursor,
+  .marqueeTrack,
+  .btnPrimary::after,
+  .aurora,
+  .beam,
+  .brandOrbit,
+  .brandSpark,
+  .scrollCueWheel {
+    animation: none !important;
+  }
+
+  /* Parked, not removed: the ambience still tints the page, it just holds
+     still instead of drifting. */
+  .aurora,
+  .beam {
+    opacity: 0.4;
+  }
+
+  .gridBg {
+    background-position: 0 0;
+  }
+
+  .marquee {
+    flex-wrap: wrap;
+    mask-image: none;
+  }
+
+  .marqueeTrack {
+    animation: none;
+    flex-wrap: wrap;
+  }
+
+  .panel {
+    animation: none;
+  }
+
+  .typeCell:hover,
+  .roleCard:hover,
+  .btnPrimary:hover,
+  .btnGhost:hover {
+    transform: none;
+  }
+}

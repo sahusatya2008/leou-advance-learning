@@ -1,0 +1,17 @@
+# Face verification service dependencies.
+# Runs with the project venv: face/.venv (Python 3.11).
+# Runtime APIs used:
+#   - insightface  (ArcFace / buffalo_l detection + 512-d recognition embeddings)
+#   - deepface     (MiniFASNet silent-face-anti-spoofing -> liveness per frame)
+#   - pytesseract  (reads a UPI transaction id off a camera frame for /scan-payment)
+fastapi
+uvicorn[standard]
+python-multipart
+numpy
+pillow
+opencv-python
+onnxruntime
+insightface
+deepface
+tf-keras
+pytesseract

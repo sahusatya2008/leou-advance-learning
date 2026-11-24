@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0" stop-color="#FBBF24"/>
+      <stop offset="0.5" stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <g transform="matrix(1 0 -0.06 1 2.16 0)">
+    <path d="M8 44 L14 40.6 L20 20 L27 33 L36 12 L45 33 L52 20 L58 40.6 L64 44 L36 60 Z" fill="url(#gold)"/>
+  </g>
+</svg>

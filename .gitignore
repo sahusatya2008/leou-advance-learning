@@ -1,0 +1,73 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+runner/node_modules/
+face/.venv/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+runner/dist/
+
+# python
+__pycache__/
+*.pyc
+
+# misc
+.DS_Store
+*.pem
+*.log
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files — real secrets stay local; the safe template is committed
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# generated prisma client
+/src/generated/prisma
+src/generated/
+
+# local uploads (photos, answer files)
+uploads/
+# backups
+backups/
+# logs
+logs/
+
+# core assets — model weights and the live payment QR are not published
+public/models/
+public/payment-qr.png
+
+# operational runbook — contains internal hosts and dev defaults
+DEPLOYMENT.md
+
+# editor / agent scaffolding
+.agents/
+.claude/
+.windsurf/

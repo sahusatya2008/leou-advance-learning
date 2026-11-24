@@ -1,0 +1,58 @@
+[
+ {
+  "name": "phonepe",
+  "text": "Payment Successful\nPaid to LEOU\n\u20b91,315.00\nUPI Ref 428193756201\n02 Oct 2025, 14:03\nTransaction ID 428193756201"
+ },
+ {
+  "name": "gpay",
+  "text": "Amount paid\nRs 1,315.00\nTo: 9975510580.wallet@phonepe\nGoogle Pay\n12:44 pm, 2 Oct 2025\nTransaction id: 428193756201"
+ },
+ {
+  "name": "bare",
+  "text": "Amount: 1315\nDate: 2025-10-02 09:15\nUTR 428193756201"
+ },
+ {
+  "name": "decoy",
+  "text": "Total paid \u20b99,99,999.00\nUPI transaction reference number 428193756201\nPaid on 03/10/2025 18:20\nBeneficiary LEOU tuition"
+ },
+ {
+  "name": "iso",
+  "text": "Paid 2025-10-02 at 09:15\nRef 428193756201"
+ },
+ {
+  "name": "midnight",
+  "text": "done 12:05 am\nRef 428193756201"
+ },
+ {
+  "name": "noon",
+  "text": "done 12:05 pm\nRef 428193756201"
+ },
+ {
+  "name": "earlypm",
+  "text": "done 1:05 pm\nRef 428193756201"
+ },
+ {
+  "name": "dayfirst",
+  "text": "on 05/10/2025\nRef 428193756201"
+ },
+ {
+  "name": "decimal-only",
+  "text": "Amount paid 1315.50\nUTR 428193756201"
+ },
+ {
+  "name": "no-amount",
+  "text": "Payment Successful\nUPI Ref 428193756201"
+ },
+ {
+  "name": "noise",
+  "text": "*** ***\n||||\nRef: 428193756201"
+ },
+ {
+  "name": "ocr_glued_spaces",
+  "text": "PaymentSuccessful\nPaidtoLEOQU\n\nRs5.00\nUPIRef428190000101\n29Sep2026,16:29\nTransactionID428190000101"
+ },
+ {
+  "name": "ocr_no_space_date",
+  "text": "Payment Successful\nPaid to LEOU\nRs 1,315.00\nUPI Ref 428193756201\n02Oct2025, 14:03\nTransaction ID 428193756201"
+ }
+]

@@ -1,0 +1,23 @@
+-- AlterEnum
+-- This migration adds more than one value to an enum.
+-- With PostgreSQL versions 11 and earlier, this is not possible
+-- in a single migration. This can be worked around by creating
+-- multiple migrations, each migration adding only one value to
+-- the enum.
+
+
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_UNASSIGN_BATCH';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_CREATE_CLASS';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_UPDATE_CLASS';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_DELETE_CLASS';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_CREATE_BATCH';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_UPDATE_BATCH';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_DELETE_BATCH';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_CREATE_SUBJECT';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_UPDATE_SUBJECT';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_DELETE_SUBJECT';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_ALLOT_SUBJECT';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_REMOVE_SUBJECT_CLASS';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_CREATE_QUESTION';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_UPDATE_QUESTION';
+ALTER TYPE "LogType" ADD VALUE 'ADMIN_DELETE_QUESTION';

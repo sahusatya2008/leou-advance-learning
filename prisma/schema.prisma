@@ -1,0 +1,1348 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7: datasource url is supplied via prisma.config.ts + @prisma/adapter-pg
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  STUDENT
+  ADMIN
+  PARENT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+}
+
+enum Stream {
+  HUMANITIES
+  SCIENCE
+  COMMERCE
+}
+
+enum SchoolStatus {
+  CURRENT
+  PAST
+}
+
+enum QuestionType {
+  MCQ
+  SHORT
+  LONG
+  CODING
+  SQL
+  ORAL
+  UPLOAD
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum SqlDialect {
+  MySQL
+  PostgreSQL
+  SQLite
+}
+
+enum AssessmentKind {
+  ASSIGNMENT
+  MOCK
+  TEST
+}
+
+enum AssessmentStatus {
+  DRAFT // being authored, not visible
+  SCHEDULED // startsAt in future, paper ready
+  RELEASED // visible to students, attemptable inside window
+  ACTIVE // attempt window open
+  CLOSED // window ended, awaiting evaluation
+  EVALUATED // grading done, not yet released
+  RELEASED_TO_STUDENTS // scores/reports visible to students
+}
+
+// Scheduled assessments have a fixed window and a single attempt. Flexible
+// assessments (assignments/mocks) are attemptable anytime with up to
+// maxAttempts (null = unlimited) and no deadline window.
+enum AssessmentAttemptMode {
+  SCHEDULED
+  FLEXIBLE
+}
+
+// ---------------------------------------------------------------------------
+// Practical assignments
+//
+// A "practical" is ungraded guided practice: the admin marks questions as
+// practical per chapter, and the student works through them in a full-screen
+// workspace with a code editor, a sandboxed terminal and per-question doubt
+// threads. It is deliberately NOT an Assessment: nothing is scored, there is no
+// attempt window and no evaluation queue, so forcing it into Assessment/Submission
+// would drag marks, windows and the whole kind switch along with it.
+// ---------------------------------------------------------------------------
+
+enum PracticalStatus {
+  DRAFT // builder still being edited, invisible to students
+  PUBLISHED // visible to entitled students
+  ARCHIVED // withdrawn from students, kept for the record
+}
+
+enum PracticalAttemptStatus {
+  IN_PROGRESS
+  FINISHED
+}
+
+// Every observable thing a student does on a practical question. This is the
+// audit trail the admin reads, so it is append-only and ordered.
+enum PracticalEventType {
+  CODE_SAVED
+  CODE_RUN
+  TERMINAL_INPUT
+  TERMINAL_OUTPUT
+  ATTEMPT_STARTED
+  ATTEMPT_FINISHED
+  ATTEMPT_REOPENED
+}
+
+// A doubt thread: OPEN until an admin replies, ANSWERED until the student says
+// it helped, SATISFIED once they confirm it (which also purges its recordings).
+enum PracticalDoubtStatus {
+  OPEN
+  ANSWERED
+  SATISFIED
+}
+
+enum DoubtAuthorRole {
+  STUDENT
+  ADMIN
+}
+
+// SCREEN is a short silent capture of what the student was looking at; VOICE is
+// their spoken explanation. Both are optional and always require explicit
+// consent, and both are deleted when the thread is satisfied.
+enum DoubtRecordingKind {
+  SCREEN
+  VOICE
+}
+
+enum SubmissionStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EVALUATED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+// Why money is being collected. The first two map onto a fresh enrollment and a
+// renewal of an existing one; the third is a student who is already active and
+// wants extra subjects/chapters on top.
+enum PaymentPurpose {
+  REGISTRATION
+  RENEWAL
+  ADDITIONAL_SERVICE
+}
+
+// One proof-of-payment attempt. A student may submit more than one (a mistyped
+// transaction id, a blurry camera scan), so the history is kept per request.
+enum PaymentRequestStatus {
+  SUBMITTED // student proved payment, waiting for the admin
+  APPROVED // admin verified it; services activated
+  REJECTED // admin refused; reason + attachments are shown to the student
+  SUPERSEDED // replaced by a later attempt for the same service request
+}
+
+// How the student proved the payment.
+enum PaymentProofMethod {
+  TRANSACTION_ID
+  SCREENSHOT
+  CAMERA_SCAN
+}
+
+
+enum OnboardingStatus {
+  REQUESTED // services selected & quotation saved, awaiting admin action
+  BILLED // admin "allow & final billed" done, access code issued
+  ACTIVATED // student redeemed the access code; services live
+}
+
+// What a service request represents. INITIAL is a student's first set of
+// services; ADDITIONAL tops up an already-running plan; RENEWAL carries the
+// previous selection forward into the next month.
+enum OnboardingKind {
+  INITIAL
+  ADDITIONAL
+  RENEWAL
+}
+
+enum ServiceCodeStatus {
+  ISSUED
+  USED
+  EXPIRED
+}
+
+enum LogType {
+  LOGIN_PASSWORD
+  LOGIN_PASSWORD_FAIL
+  LOGIN_FACE
+  LOGIN_FACE_FAIL
+  LOGIN_ACCESS_CODE
+  LOGIN_SUCCESS
+  LOGOUT
+  FACE_ENROLL
+  ACCESS_CODE_GENERATED
+  ACCESS_CODE_CONSUMED
+  SESSION_REVOKED
+  ATTEMPT_START
+  AUTOSAVE
+  SUBMIT
+  PROCTOR_EVENT
+  PAGE_VIEW
+  ADMIN_LOGIN
+  ADMIN_CREATE_STUDENT
+  ADMIN_CREATE_STUDENT_FAIL
+  ADMIN_UPDATE_STUDENT
+  ADMIN_SUSPEND_STUDENT
+  ADMIN_BLOCK_STUDENT
+  ADMIN_DELETE_STUDENT
+  ADMIN_ASSIGN_BATCH
+  ADMIN_UNASSIGN_BATCH
+  ADMIN_CREATE_CLASS
+  ADMIN_UPDATE_CLASS
+  ADMIN_DELETE_CLASS
+  ADMIN_CREATE_BATCH
+  ADMIN_UPDATE_BATCH
+  ADMIN_DELETE_BATCH
+  ADMIN_CREATE_SUBJECT
+  ADMIN_UPDATE_SUBJECT
+  ADMIN_DELETE_SUBJECT
+  ADMIN_ALLOT_SUBJECT
+  ADMIN_REMOVE_SUBJECT_CLASS
+  ADMIN_CREATE_QUESTION
+  ADMIN_UPDATE_QUESTION
+  ADMIN_DELETE_QUESTION
+  ADMIN_CREATE_ASSESSMENT
+  ADMIN_UPDATE_ASSESSMENT
+  ADMIN_DELETE_ASSESSMENT
+  ADMIN_CREATE_PRACTICAL
+  ADMIN_UPDATE_PRACTICAL
+  ADMIN_RELEASE_ASSESSMENT
+  ADMIN_EVALUATE
+  ADMIN_RELEASE_RESULTS
+  ADMIN_NOTICE
+  PARENT_LOGIN
+  ONBOARDING_REQUEST
+  SERVICE_CODE_ISSUED
+  SERVICE_CODE_REDEEMED
+  STUDENT_SUBMIT_PAYMENT
+  ADMIN_DECIDE_PAYMENT
+  ADMIN_MANAGE_PARENT
+}
+
+// ---------------------------------------------------------------------------
+// Identity & Access
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String       @id @default(cuid())
+  username     String       @unique
+  email        String       @unique
+  phone        String?
+  passwordHash String
+  // AES-256-GCM copy of the current password, written whenever the password is
+  // set. The hash above is what login verifies; this column exists only so an
+  // administrator can read back the password they provisioned for a student or
+  // parent. Null for accounts whose password predates this column.
+  passwordEnc  String?
+  role         Role         @default(STUDENT)
+  status       UserStatus   @default(ACTIVE)
+  // True only for accounts created via self-registration: they must go through
+  // the service onboarding (select board/class/subjects, request services,
+  // get billed, redeem a 15-digit access code) before using the panel.
+  onboardingRequired Boolean     @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  studentProfile   StudentProfile?
+  parentProfile    ParentProfile?
+  sessions         Session[]
+  accessCodes      AccessCode[]
+  logs             ActivityLog[]
+  onboardingRequests OnboardingRequest[]
+  serviceCodes     ServiceCode[]
+  activations      ServiceActivation[]
+  paymentRequests  PaymentRequest[]
+  gameProgress     GameProgress[]
+  chessCreated     ChessMatch[] @relation("ChessCreatedBy")
+  chessWhite       ChessMatch[] @relation("ChessWhite")
+  chessBlack       ChessMatch[] @relation("ChessBlack")
+  chessTraining    ChessTrainingProgress[]
+
+  @@index([role, status])
+}
+
+model StudentProfile {
+  id                 String        @id @default(cuid())
+  userId             String        @unique
+  fullName           String
+  classRoomId        String
+  stream             Stream?
+  schoolName         String
+  schoolStatus       SchoolStatus  @default(CURRENT)
+  schoolClassHistory String?
+  facePhotoUrl       String
+  // 3-5 x 128-d face vectors captured at enrollment
+  faceEmbeddings     Json
+  parentUserId       String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   ParentProfile? @relation("ParentStudents", fields: [parentUserId], references: [id])
+  classRoom ClassRoom @relation(fields: [classRoomId], references: [id])
+  batches  BatchStudent[]
+  payments PaymentRecord[]
+  reports  ReportRecord[]
+  submissions Submission[]
+  practicalAttempts PracticalAttempt[]
+  practicalDoubts   PracticalDoubt[]
+
+  @@index([classRoomId])
+}
+
+model ParentProfile {
+  id       String  @id @default(cuid())
+  userId   String  @unique
+  fullName String?
+  // A parent account created from a student's profile gets a system-generated
+  // username that the student may personalise once. After that first save the
+  // username is fixed for the student (an admin can still change it).
+  usernameLocked Boolean @default(false)
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  students StudentProfile[]  @relation("ParentStudents")
+
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  userAgent String?
+  ip        String?
+  deviceId  String?
+  device    Json?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AccessCode {
+  id        String    @id @default(cuid())
+  studentId String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdBy String?
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([code, expiresAt])
+}
+
+// ---------------------------------------------------------------------------
+// Academic hierarchy
+// ---------------------------------------------------------------------------
+
+model ClassRoom {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  hasStreams Boolean    @default(false)
+  sortOrder  Int        @default(0)
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+
+  students       StudentProfile[]
+  subjects       SubjectClass[]
+  batches        Batch[]
+  questions      Question[]
+  onboardingRequests OnboardingRequest[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Subject {
+  id        String        @id @default(cuid())
+  name      String
+  code      String        @unique
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+
+  classes       SubjectClass[]
+  batches       BatchSubject[]
+  questions     Question[]
+  pricingItems  SubjectPricingItem[]
+  tutoringRates TutoringRate[]
+  assessments   Assessment[]
+  practicalAssignments PracticalAssignment[]
+  @@index([isActive])
+}
+
+// Subject allowed for a given class (drives registration dropdowns)
+model SubjectClass {
+  id        String @id @default(cuid())
+  subjectId String
+  classRoomId String
+
+  classRoom ClassRoom @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
+  subject   Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([subjectId, classRoomId])
+  @@index([classRoomId])
+}
+
+model Batch {
+  id        String   @id @default(cuid())
+  classRoomId String
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  classRoom ClassRoom       @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
+  subjects  BatchSubject[]
+  students  BatchStudent[]
+  assessments Assessment[]
+  practicalAssignments PracticalAssignment[]
+  notices      Notice[]
+  pricingItems SubjectPricingItem[]
+  tutoringRates TutoringRate[]
+
+  @@unique([classRoomId, name])
+  @@index([classRoomId])
+}
+
+model BatchSubject {
+  id       String @id @default(cuid())
+  batchId  String
+  subjectId String
+
+  batch   Batch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, subjectId])
+}
+
+model BatchStudent {
+  id        String   @id @default(cuid())
+  batchId   String
+  studentId String
+  assignedAt DateTime @default(now())
+
+  batch   Batch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, studentId])
+  @@index([studentId])
+}
+
+// ---------------------------------------------------------------------------
+// Service onboarding: board, chapters/topics pricing, tutoring rates,
+// service requests and the 15-digit payment access codes.
+// ---------------------------------------------------------------------------
+
+model Board {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([isActive, sortOrder])
+}
+
+// A proof-of-payment submission waiting on an admin decision.
+//
+// Nothing here is trusted: the admin matches the LeouPay reference and/or the
+// transaction id against their UPI statement before approving, and approving is
+// the only thing that activates services.
+model PaymentRequest {
+  id      String @id @default(cuid())
+  userId  String
+  // The enrollment this money pays for (new, renewed, or extra services).
+  requestId String
+  purpose PaymentPurpose
+
+  // "LEOU-7K2M-QH9X": copied from the OnboardingRequest so a student who has to
+  // resubmit keeps the same reference. Not unique - one request can have several
+  // attempts (mistyped id, blurry scan).
+  leouPayRef String
+
+  method        PaymentProofMethod
+  // What the student typed, or what the camera OCR read back for them to confirm.
+  transactionId String?
+  screenshotUrl String?
+  cameraProofUrl String?
+  // Text the scanner extracted, kept so the admin sees what the student saw.
+  ocrText       String?
+  // What the scanner read off the device screen, and how it compared to the
+  // quotation. Persisting the verdict (rather than only the raw text) means the
+  // admin is not re-deriving it by eye, and the student cannot be shown a
+  // different result later than the one they agreed to.
+  scannedAmount Decimal? @db.Decimal(10, 2)
+  scannedDate   String?
+  scannedTime   String?
+  scannedPayee  String?
+  // JSON of PaymentCheckResult
+  checkResult   String?
+  // Student can pull back something they sent by mistake.
+  superseded    Boolean  @default(false)
+
+  status       PaymentRequestStatus @default(SUBMITTED)
+  decisionNote String?
+  decidedAt    DateTime?
+  decidedById  String?
+  // UPI id / amount expected at submission time, so a later price change cannot
+  // make an already-paid receipt look wrong.
+  amountExpected Decimal? @db.Decimal(10, 2)
+  submittedAt DateTime @default(now())
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request  OnboardingRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  attachments PaymentRequestAttachment[]
+
+  @@index([userId, submittedAt])
+  @@index([status, submittedAt])
+  @@index([requestId])
+  @@index([purpose, status])
+}
+
+// Files the admin attaches when refusing a payment (a bank mismatch screenshot,
+// a note). Shown back to the student on their payments page.
+model PaymentRequestAttachment {
+  id        String   @id @default(cuid())
+  paymentId String
+  url       String
+  mime      String?
+  createdAt DateTime @default(now())
+
+  payment PaymentRequest @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+}
+
+// A billable "chapter or topic" entry the admin configures inside a batch for a
+// subject. Each entry carries the rates for assignments, mock tests and real
+// tests. The student's comma-separated topics/chapters are matched against
+// these to compute the quotation.
+model SubjectPricingItem {
+  id          String   @id @default(cuid())
+  batchId     String
+  subjectId   String
+  name        String
+  assignmentRate Decimal @db.Decimal(10, 2) @default(0)
+  mockRate       Decimal @db.Decimal(10, 2) @default(0)
+  testRate       Decimal @db.Decimal(10, 2) @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  batch   Batch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, subjectId, name])
+  @@index([batchId, subjectId])
+}
+
+// Online real-human tutoring rates for a subject inside a batch. Three billing
+// bases: per hour, per week (N classes in a week) or per month (N days per week).
+model TutoringRate {
+  id    String @id @default(cuid())
+  batchId String
+  subjectId String
+  hourlyRate         Decimal? @db.Decimal(10, 2)
+  weeklyClasses      Int?
+  weeklyRate         Decimal? @db.Decimal(10, 2)
+  monthlyDaysPerWeek Int?
+  monthlyRate        Decimal? @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  batch   Batch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, subjectId])
+  @@index([batchId, subjectId])
+}
+
+// One service onboarding per self-registered student (a new request is created
+// when a lapsed subscription is renewed). Holds every selection the student
+// made and the computed quotation.
+model OnboardingRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  boardId   String
+  classRoomId String
+  subjects  Json // ["subjectId", ...]
+
+  wantAssignments   Boolean @default(false)
+  assignmentTopics  String // comma-separated chapters / topics (legacy flat list)
+  wantMockTests     Boolean @default(false)
+  mockTopics        String
+  wantRealTests     Boolean @default(false)
+  testTopics        String
+  sameTopicsForMockTests Boolean @default(false) // reuse assignment topics for mock + real
+
+  // Chapters per subject, which is the shape the wizard actually collects:
+  //   { "<subjectId>": { "assignment": ["Ch 1", ...], "mock": [...], "test": [...] } }
+  //
+  // The flat *Topics columns above are kept and kept in sync as the union of
+  // every subject's list, because pricing, the admin screens and the fee records
+  // all read them. This field is the authority for what a student is *entitled*
+  // to, since a flat list cannot tell one subject's chapter from another
+  // subject's chapter of the same name. Nullable only so a hand-written row can
+  // still be read through the flat columns; a backfill fills every existing one.
+  subjectTopics Json?
+
+  wantTutoring      Boolean @default(false)
+  tutorSubjects     Json // ["subjectId", ...] subset of subjects
+  tutorGoals        String // what the student wants to learn from regular classes
+  tutorPlan         String? // "HOURLY" | "WEEKLY" | "MONTHLY" (chosen at billing time)
+  tutorHours        Int? // only when plan = HOURLY
+
+  amount    Decimal? @db.Decimal(10, 2)
+  breakdown Json?
+
+  // "LEOU-7K2M-QH9X": minted once when the quotation is saved, shown on the
+  // student's Pay Now page, and reused by every payment attempt for this
+  // request so the student only ever notes down one reference. Nullable because
+  // historical requests predate this; a backfill fills them in.
+  leouPayRef String? @unique
+
+  kind     OnboardingKind @default(INITIAL)
+  // For ADDITIONAL/RENEWAL: the request this one was derived from, so the
+  // original purchase stays intact and the top-up is auditable on its own.
+  parentRequestId String?
+
+  // For a RENEWAL: the ids of the live ServiceActivation rows this renewal
+  // takes over when the admin approves it. Approving ends those old periods and
+  // opens one fresh 30-day period, so a renewal of *just the add-on* never has
+  // to guess which subscription is being replaced. An empty array means a
+  // whole-plan renewal that takes over every live activation.
+  renewsActivationIds Json?
+
+  status     OnboardingStatus @default(REQUESTED)
+
+  // The payment lock. Set the moment the student confirms the quotation they
+  // want to pay, and the single thing that makes the quotation uneditable: every
+  // write path refuses a locked request, so a student cannot change the amount
+  // after pointing a real payment at a reference. It survives leaving the page,
+  // and is cleared only when the attempt is resolved - admin approves (request is
+  // now ACTIVATED, nothing left to edit) or admin rejects with a reason (the
+  // student is explicitly invited to change the choices and try again).
+  lockedAt   DateTime?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classRoom  ClassRoom @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
+  codes      ServiceCode[]
+  activations ServiceActivation[]
+  paymentRequests PaymentRequest[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([classRoomId])
+  @@index([lockedAt])
+}
+
+// 15-digit "payment success" access codes the admin issues after allowing the
+// requested services. Admin can generate as many as needed; the first unused
+// non-expired one a student redeems activates exactly one monthly period.
+model ServiceCode {
+  id        String   @id @default(cuid())
+  userId    String
+  requestId String?
+  code      String // always 15 digits
+  status    ServiceCodeStatus @default(ISSUED)
+  expiresAt DateTime
+  usedAt    DateTime?
+  issuedBy  String?
+  createdAt DateTime @default(now())
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request OnboardingRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([code])
+}
+
+// A monthly service period that becomes live when a student redeems a code.
+// The dashboard/attempt gating is driven from the latest activation expiry.
+model ServiceActivation {
+  id           String   @id @default(cuid())
+  userId       String
+  requestId    String?
+  codeId       String?
+  activatedAt  DateTime @default(now())
+  expiresAt    DateTime
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request OnboardingRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ---------------------------------------------------------------------------
+// Question bank
+// ---------------------------------------------------------------------------
+
+model Question {
+  id          String            @id @default(cuid())
+  type        QuestionType
+  classRoomId String
+  subjectId   String
+  difficulty  QuestionDifficulty @default(MEDIUM)
+  // Chapter/topic tag mirrors Assessment.topic (SubjectPricingItem.name), so
+  // every question carries the class+subject+chapter the admin can filter on.
+  topic       String?
+  // Marks this question as part of the guided practical set for its chapter.
+  // The admin sets this when adding a question; the practical builder then
+  // lists every question in the chapter that has it.
+  isPractical Boolean           @default(false)
+  // Concept tags such as ["while-loop", "loop"], separate from the chapter in
+  // `topic`. A chapter like "Getting Started with Python" holds exercises for
+  // several concepts, and the practical builder still needs to pick out the
+  // while-loop ones.
+  tags         Json?
+  stem        String            // rich text (markdown)
+  imageUrl    String?           // photo of the question (any type)
+  explanation String?           // model answer / reference
+  // coding-specific
+  allowedLanguages Json          // string[] e.g. ["python","java","cpp","c","rust","node"]
+  starterCode      Json?         // { language: code } record
+  headerTemplate   String?       // immutable prelude (e.g. fixed signature)
+  solutionCode     String?       // reference solution (auto-grading reference)
+  // sql-specific
+  sqlDialect        SqlDialect?
+  sqlSchemaSql      String?       // DDL to seed ephemeral db
+  sqlSeedSql        String?
+  sqlExpectedResult Json?         // ordered or unordered expected result set
+  sqlComparisonMode String?       // "EXACT_ORDER" | "UNORDERED"
+  createdAt   DateTime            @default(now())
+  createdBy   String?
+
+  classRoom ClassRoom        @relation(fields: [classRoomId], references: [id])
+  subject   Subject          @relation(fields: [subjectId], references: [id])
+  options   QuestionOption[]
+  testCases TestCase[]
+  inAssessments AssessmentQuestion[]
+  inPracticalSets PracticalAssignmentQuestion[]
+  practicalAttempts PracticalAttempt[]
+  practicalDoubts  PracticalDoubt[]
+
+  @@index([type])
+  @@index([classRoomId, subjectId])
+  @@index([classRoomId, subjectId, topic])
+  // Serves the student practical list for one chapter of one subject.
+  @@index([classRoomId, subjectId, topic, isPractical])
+}
+
+model QuestionOption {
+  id         String @id @default(cuid())
+  questionId String
+  text       String?
+  imageUrl   String?
+  isCorrect  Boolean @default(false)
+  sortOrder  Int     @default(0)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model TestCase {
+  id         String @id @default(cuid())
+  questionId String
+  input      String
+  expected   String
+  isHidden   Boolean @default(false)
+  weight     Int     @default(1)
+  sortOrder  Int     @default(0)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+// ---------------------------------------------------------------------------
+// Assessments (batch-scoped)
+// ---------------------------------------------------------------------------
+
+model Assessment {
+  id             String           @id @default(cuid())
+  batchId        String
+  kind           AssessmentKind
+  // The batch subject + admin-listed chapter/topic this assessment belongs to.
+  // Both come from the batch's SubjectPricingItem list so that only students
+  // subscribed to that topic & service kind are entitled to attempt it.
+  subjectId      String?          // Subject the assessment is linked to
+  topic          String?          // chapter/topic name (SubjectPricingItem.name) of that subject
+  attemptMode    AssessmentAttemptMode @default(SCHEDULED)
+  maxAttempts    Int?             // for FLEXIBLE: null = unlimited
+  title          String
+  instructions   String?
+  status         AssessmentStatus @default(DRAFT)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  durationMinutes Int
+  shuffleQuestions Boolean        @default(false)
+  // proctoring configuration for real tests
+  proctoring     Json?            // { webcamOn, fullscreenLock, maxTabSwitches, blockPaste }
+  totalMarks     Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  createdBy      String?
+
+  batch       Batch                @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  subject     Subject?             @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  questions   AssessmentQuestion[]
+  submissions Submission[]
+
+  @@index([batchId, kind])
+  @@index([status])
+  @@index([batchId, subjectId, topic])
+}
+
+model AssessmentQuestion {
+  id           String   @id @default(cuid())
+  assessmentId String
+  questionId   String
+  order        Int      @default(0)
+  marks        Int      @default(1)
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question   Question   @relation(fields: [questionId], references: [id])
+
+  answers Answer[]
+
+  @@unique([assessmentId, questionId])
+  @@index([assessmentId])
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  assessmentId String
+  studentId    String
+  attemptNumber Int             @default(1)
+  status       SubmissionStatus @default(IN_PROGRESS)
+  startedAt    DateTime         @default(now())
+  submittedAt  DateTime?
+  autoScore    Int              @default(0)
+  manualScore  Int              @default(0)
+  totalScore   Int?
+  feedback     String?
+  proctorEvents Json?           // [ {ts, type, detail} ]
+  releasedAt   DateTime?
+  evaluatedAt  DateTime?
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers    Answer[]
+
+  @@index([assessmentId, studentId])
+  @@index([studentId])
+}
+
+model Answer {
+  id              String   @id @default(cuid())
+  submissionId    String
+  assessmentQuestionId String
+  // payload shape differs by type:
+  //  MCQ:   { optionIds: [...] }
+  //  text:  { text: "..." }
+  //  upload:{ fileUrls: [...] }
+  //  coding:{ language, code, runs: [...] }
+  //  sql:   { query, resultSummary }
+  payload         Json
+  isAutoCorrect   Boolean?
+  autoResult      Json?          // e.g. { passed: n, total: n, correct: bool }
+  marksAwarded    Int?
+  feedback        String?
+  evaluatedBy     String?
+  evaluatedAt     DateTime?
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  assessmentQuestion AssessmentQuestion @relation(fields: [assessmentQuestionId], references: [id])
+
+  @@unique([submissionId, assessmentQuestionId])
+  @@index([assessmentQuestionId])
+}
+
+model PracticalAssignment {
+  id           String          @id @default(cuid())
+  batchId      String
+  subjectId    String
+  // Chapter name, mirroring SubjectPricingItem.name so entitlement can be
+  // matched against the chapters the student actually availed.
+  topic        String
+  title        String
+  instructions String?
+  status       PracticalStatus @default(DRAFT)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  createdBy    String?
+
+  batch       Batch       @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  subject     Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  questions   PracticalAssignmentQuestion[]
+  attempts    PracticalAttempt[]
+  doubts      PracticalDoubt[]
+
+  @@unique([batchId, subjectId, topic])
+  @@index([batchId, status])
+  @@index([batchId, subjectId, topic])
+}
+
+// One question inside a practical set. Order is admin-controlled because the
+// student list is a syllabus walk, not a random sample.
+model PracticalAssignmentQuestion {
+  id           String   @id @default(cuid())
+  assignmentId String
+  questionId   String
+  order        Int      @default(0)
+  addedAt      DateTime @default(now())
+
+  assignment PracticalAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  question   Question            @relation(fields: [questionId], references: [id])
+
+  @@unique([assignmentId, questionId])
+  @@index([assignmentId])
+}
+
+// A student's work on one practical question. Resuming the practical page picks
+// the student's most recent attempt per question and shows its latest code.
+model PracticalAttempt {
+  id           String                 @id @default(cuid())
+  assignmentId String
+  studentId    String
+  questionId   String
+  status       PracticalAttemptStatus @default(IN_PROGRESS)
+  language     String?
+  // Latest snapshot only. The full history lives in PracticalEvent so this stays
+  // cheap to list per student.
+  code         String?
+  startedAt    DateTime               @default(now())
+  lastActivityAt DateTime             @default(now())
+  finishedAt   DateTime?
+
+  assignment PracticalAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    StudentProfile       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  question   Question             @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  events     PracticalEvent[]
+
+  @@index([assignmentId, studentId])
+  @@index([studentId, lastActivityAt])
+  @@index([studentId, questionId, lastActivityAt])
+}
+
+// Append-only activity trail. This is what the admin reads when they open a
+// student, so terminal payloads are truncated at write time (see the service)
+// rather than growing without bound.
+model PracticalEvent {
+  id        String            @id @default(cuid())
+  attemptId String
+  // Denormalised so the admin activity feed never has to join through attempts.
+  studentId String
+  type      PracticalEventType
+  summary   String?
+  detail    Json?
+  createdAt DateTime          @default(now())
+
+  attempt PracticalAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId, createdAt])
+  @@index([studentId, createdAt])
+  @@index([type, createdAt])
+}
+
+model PracticalDoubt {
+  id           String                @id @default(cuid())
+  assignmentId String
+  questionId   String
+  studentId    String
+  status       PracticalDoubtStatus  @default(OPEN)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  // Drives both the admin inbox ordering and the 30-day purge: only a thread that
+  // is still unresolved ages out its recordings.
+  lastActivityAt DateTime            @default(now())
+  answeredAt   DateTime?
+  satisfiedAt  DateTime?
+
+  assignment PracticalAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  question   Question            @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  student    StudentProfile      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  messages   PracticalDoubtMessage[]
+  recordings PracticalRecording[]
+
+  @@index([studentId, status])
+  @@index([assignmentId, questionId])
+  @@index([status, lastActivityAt])
+}
+
+model PracticalDoubtMessage {
+  id          String         @id @default(cuid())
+  doubtId     String
+  authorRole  DoubtAuthorRole
+  // The author's user id. Kept as a plain string because students and admins are
+  // different tables; the role column says which one it is.
+  authorId    String
+  body        String?
+  // Snapshot of what the student was looking at when they asked. Capped in the
+  // service, and only ever written by the owning student.
+  codeExcerpt     String?
+  terminalExcerpt String?
+  createdAt   DateTime       @default(now())
+
+  doubt      PracticalDoubt @relation(fields: [doubtId], references: [id], onDelete: Cascade)
+  recordings PracticalRecording[]
+
+  @@index([doubtId, createdAt])
+}
+
+model PracticalRecording {
+  id         String             @id @default(cuid())
+  doubtId    String
+  // The message the recording was attached to. SetNull, not Cascade: a recording
+  // must still be purgeable if its message is ever removed.
+  messageId  String?
+  studentId  String
+  kind       DoubtRecordingKind
+  // Filename only. The path is rebuilt from UPLOAD_ROOT on read so a database row
+  // can never point outside the recordings directory.
+  storageName String
+  mimeType   String
+  sizeBytes  Int
+  durationMs Int?
+  // Recorded at upload, and the consent the student gave is shown next to it.
+  consentedAt DateTime
+  createdAt   DateTime           @default(now())
+  // Set when the file is deleted; the row is kept so the thread can show that a
+  // recording existed and was removed.
+  deletedAt  DateTime?
+
+  doubt   PracticalDoubt         @relation(fields: [doubtId], references: [id], onDelete: Cascade)
+  message PracticalDoubtMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([doubtId, kind])
+  @@index([deletedAt])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Payments, reports & activity
+// ---------------------------------------------------------------------------
+
+model PaymentRecord {
+  id         String        @id @default(cuid())
+  studentId  String
+  title      String
+  amount     Decimal       @db.Decimal(10, 2)
+  dueDate    DateTime
+  status     PaymentStatus @default(PENDING)
+  paidAt     DateTime?
+  receiptUrl String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, status])
+}
+
+// Auto-generated per-assessment record pushed to the student's Reports section
+model ReportRecord {
+  id          String   @id @default(cuid())
+  studentId   String
+  batchId     String?
+  assessmentId String?
+  kind        AssessmentKind
+  title       String
+  summary     Json            // scores, percentile, breakdown
+  releasedAt  DateTime
+  createdAt   DateTime        @default(now())
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+// Admin-pushed notices -> student Activity feed
+model Notice {
+  id        String   @id @default(cuid())
+  batchId   String?
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  batch Batch? @relation(fields: [batchId], references: [id])
+
+  @@index([batchId])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  type       LogType
+  ip         String?
+  userAgent  String?
+  deviceId   String?
+  device     Json?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Traffic manager (live request log + per-visitor rollup)
+//
+// The guarddog in `src/proxy.ts` is the only writer. It runs on the Node
+// runtime and schedules the write with `event.waitUntil`, so recording never
+// delays a response. Rows exist so an admin can see *who* is on the box right
+// now and what they are doing, which the in-memory counters in
+// `src/lib/trafficManager.ts` deliberately cannot answer (they are counts-only
+// and live only inside the proxy bundle).
+//
+// Both tables are pruned by the admin read path, so they stay bounded.
+// ---------------------------------------------------------------------------
+
+// PAGE = a rendered page/navigation; API = a `/api/*` call.
+enum TrafficKind {
+  PAGE
+  API
+}
+
+model TrafficEvent {
+  id        String      @id @default(cuid())
+  kind      TrafficKind
+  method    String
+  path      String
+  ip        String?
+  userAgent String?
+  deviceId  String?
+  // Denormalised parse of the user agent, so the live feed never has to join.
+  browser   String?
+  os        String?
+  device    String?
+  isMobile  Boolean     @default(false)
+  referer   String?
+  // Resolved from the session cookie's JWT (not a DB lookup); null for guests.
+  userId    String?
+  role      String?
+  createdAt DateTime    @default(now())
+
+  @@index([createdAt])
+  @@index([deviceId, createdAt])
+  @@index([kind, createdAt])
+  @@index([path])
+}
+
+// One row per physical client, keyed by sha256(ip|userAgent) - the same
+// `deviceId` sessions and activity logs already use. This is the "visitors"
+// view: first/last seen, request mix, and the extra device facts the browser
+// reports about itself.
+model TrafficVisitor {
+  id         String   @id @default(cuid())
+  deviceId   String   @unique
+  ip         String?
+  userAgent  String?
+  browser    String?
+  os         String?
+  device     String?
+  isMobile   Boolean  @default(false)
+  userId     String?
+  role       String?
+  // Filled in by the browser beacon (`/api/traffic/identify`), which sees things
+  // only the client knows.
+  language   String?
+  timezone   String?
+  screen     String?
+  platform   String?
+  hits       Int      @default(0)
+  pageHits   Int      @default(0)
+  apiHits    Int      @default(0)
+  firstSeen  DateTime @default(now())
+  lastSeen   DateTime @default(now())
+
+  @@index([lastSeen])
+  @@index([userId])
+  @@index([firstSeen])
+}
+
+// ---------------------------------------------------------------------------
+// Coding games
+//
+// The games themselves are static definitions in `src/lib/games` (a level is
+// content, not a row). What is per-student and worth persisting is progress and
+// the last thing they wrote: the row is keyed to one level of one game, and
+// keeps their best star rating, their fewest commands, and the code they last
+// had open so returning to a level resumes exactly where they left off.
+//
+// `code` is a convenience snapshot, never the authority for whether a level is
+// solved - that is re-decided by replaying the run, so a tampered client cannot
+// mint stars it did not earn.
+// ---------------------------------------------------------------------------
+model GameProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  gameId    String
+  levelId   String
+  // The language the student is currently playing this level in. One row per
+  // level, not per language: switching language keeps their best score.
+  language  String   @default("python")
+  stars     Int      @default(0)
+  bestMoves Int?
+  completed Boolean  @default(false)
+  // Last editor contents for this level, so the workspace resumes.
+  code      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId, levelId])
+  @@index([userId, gameId])
+  @@index([userId, updatedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Leou Chess
+//
+// A match is one board. `mode` is COMPUTER (a human writes `move(game)` and the
+// built-in AI answers) or MULTIPLAYER (two humans, each programming their own
+// moves). The live position is a single FEN; every ply is also written to
+// ChessMove so the whole game — including the code that produced each move — can
+// be replayed and analysed long after it is over.
+//
+// `whiteCode` / `blackCode` are the current strategies so a seat resumes where
+// it left off; each ChessMove keeps its own copy so history shows what the code
+// actually was when that move was played.
+// ---------------------------------------------------------------------------
+model ChessMatch {
+  id         String @id @default(cuid())
+  mode       String // "COMPUTER" | "MULTIPLAYER"
+  status     String @default("ACTIVE") // ACTIVE | FINISHED | ABORTED
+  // Computer opponent strength: easy | medium | hard | grandmaster.
+  difficulty String?
+  language   String @default("python")
+
+  createdById String
+  whiteId     String?
+  blackId     String?
+
+  fen        String
+  result     String? // "WHITE" | "BLACK" | "DRAW"
+  reason     String?
+  plyCount   Int     @default(0)
+
+  whiteCode String?
+  blackCode String?
+
+  // A short, shareable code for a multiplayer invitation (Phase 2).
+  inviteToken String? @unique
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  finishedAt DateTime?
+
+  createdBy User         @relation("ChessCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  white     User?        @relation("ChessWhite", fields: [whiteId], references: [id], onDelete: SetNull)
+  black     User?        @relation("ChessBlack", fields: [blackId], references: [id], onDelete: SetNull)
+  moves     ChessMove[]
+
+  @@index([createdById])
+  @@index([whiteId])
+  @@index([blackId])
+  @@index([status])
+  @@index([mode, status])
+}
+
+model ChessMove {
+  id       String @id @default(cuid())
+  matchId  String
+  ply      Int
+  color    String // "w" | "b"
+  uci      String
+  san      String
+  fen      String // position AFTER this move
+  code     String?
+  language String?
+  thinkMs  Int?
+
+  createdAt DateTime @default(now())
+
+  match ChessMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, ply])
+  @@index([matchId])
+}
+
+// ---------------------------------------------------------------------------
+// Leou Chess — Training
+//
+// One row per (student, track, lesson). Training is an enrolled-only feature, so
+// it has its own table rather than reusing GameProgress: the arcade and the
+// chess curriculum are graded by different judges and read by different hubs.
+// Stars are written only after the server replays a submission, exactly like the
+// arcade, so a client can never post its own score.
+// ---------------------------------------------------------------------------
+model ChessTrainingProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  track     String // "physical" | "programming"
+  lessonId  String
+  language  String   @default("python")
+  stars     Int      @default(0)
+  completed Boolean  @default(false)
+  // Fewest student moves that solved it, for a personal best.
+  bestMoves Int?
+  // Last editor contents for programming lessons, so the workspace resumes.
+  code      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, track, lessonId])
+  @@index([userId, track])
+  @@index([userId, updatedAt])
+}

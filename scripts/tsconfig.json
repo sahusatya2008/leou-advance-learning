@@ -1,0 +1,14 @@
+{
+  "//": "Only for scripts run via tsx. Keeps the app's server-only guard intact while letting a standalone script import a service.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "../src/*"
+      ],
+      "server-only": [
+        "./stubs/server-only.ts"
+      ]
+    }
+  }
+}

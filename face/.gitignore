@@ -1,0 +1,4 @@
+face/.venv/
+face/models/
+__pycache__/
+*.pyc
